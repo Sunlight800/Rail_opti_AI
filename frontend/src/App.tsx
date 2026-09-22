@@ -23,7 +23,7 @@ import { LoginModal } from './views/LoginModal';
 import { UserProfileData } from './types/dashboard';
 import { ROLE_ALLOWED_VIEWS } from './components/layout/Sidebar';
 import { ShieldAlert } from 'lucide-react';
-import { getStoredUser } from './services/api';
+import { getStoredUser, clearAuth } from './services/api';
 
 
 export const App: React.FC = () => {
@@ -41,6 +41,20 @@ export const App: React.FC = () => {
       avatar_initials: 'AD',
     };
   });
+
+  const handleLogout = () => {
+    clearAuth();
+    setUser({
+      id: 'USR-DEMO-01',
+      username: 'demo_user',
+      email: 'demo@railopt.ai',
+      full_name: 'Demo Evaluation User',
+      role: 'DEMO_USER',
+      department: 'Operations',
+      avatar_initials: 'DM',
+    });
+    setCurrentView('dashboard');
+  };
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -61,8 +75,10 @@ export const App: React.FC = () => {
       <TopBar
         user={user}
         onOpenLogin={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
+        onNavigate={(view) => setCurrentView(view as NavigationItem)}
       />
 
       {/* Main Layout Container */}

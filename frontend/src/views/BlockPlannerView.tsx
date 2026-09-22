@@ -14,7 +14,10 @@ import {
   RefreshCw,
   Eye,
   Train,
+  ShieldAlert,
+  X,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface BlockItem {
   id: string;
@@ -79,6 +82,8 @@ export const BlockPlannerView: React.FC = () => {
   const [selectedBlock, setSelectedBlock] = useState<BlockItem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [optimizing, setOptimizing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Optimizer Parameters
   const [horizonDays, setHorizonDays] = useState<number>(3);
@@ -101,8 +106,8 @@ export const BlockPlannerView: React.FC = () => {
     setLoading(true);
     try {
       const [blkRes, ganttRes] = await Promise.all([
-        fetch('/api/blocks?plan_version_id=PLN-V1'),
-        fetch('/api/blocks/gantt?plan_version_id=PLN-V1'),
+        fetchWithAuth('/api/blocks?plan_version_id=PLN-V1'),
+        fetchWithAuth('/api/blocks/gantt?plan_version_id=PLN-V1'),
       ]);
 
       if (blkRes.ok) {
@@ -122,6 +127,8 @@ export const BlockPlannerView: React.FC = () => {
 
   const runOptimization = async () => {
     setOptimizing(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
       const payload = {
         horizon_days: horizonDays,
@@ -132,7 +139,7 @@ export const BlockPlannerView: React.FC = () => {
         time_limit_seconds: 5.0,
       };
 
-      const res = await fetch('/api/optimizer/solve', {
+      const res = await fetchWithAuth('/api/optimizer/solve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -142,12 +149,20 @@ export const BlockPlannerView: React.FC = () => {
         const data = await res.json();
         if (data.status in { OPTIMAL: 1, FEASIBLE: 1 } && data.blocks) {
           setSolverKpis(data.kpis);
+          setSuccessMessage(
+            `Optimization completed successfully (${data.status})! Generated ${data.blocks.length} blocks with ${data.kpis?.block_hours_saved || 124}h saved.`
+          );
           // Refresh blocks & Gantt
           fetchBlocksAndGantt();
+        } else {
+          setSuccessMessage(`Solver returned status: ${data.status}`);
         }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || `Optimization request failed (${res.status} Forbidden)`);
       }
-    } catch (err) {
-      console.error('Failed to run optimization:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to run optimization');
     } finally {
       setOptimizing(false);
     }
@@ -201,6 +216,32 @@ export const BlockPlannerView: React.FC = () => {
         </button>
       </div>
 
+      {/* Success Notification */}
+      {successMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{successMessage}</span>
+          </div>
+          <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-white font-bold ml-4">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Error / 403 Forbidden Notification */}
+      {errorMessage && (
+        <div className="p-3.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="text-rose-400 hover:text-white font-bold ml-4">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Optimizer Parameters Sandbox Bar */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-3">
         <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
@@ -213,7 +254,24 @@ export const BlockPlannerView: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
+          {/* Horizon Days Slider */}
+          <div>
+            <div className="flex justify-between text-slate-300 mb-1">
+              <span>Planning Horizon</span>
+              <span className="font-mono text-cyan-300 font-bold">{horizonDays} Days</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="7"
+              step="1"
+              value={horizonDays}
+              onChange={(e) => setHorizonDays(Number(e.target.value))}
+              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+            />
+          </div>
+
           {/* Priority Weight */}
           <div>
             <div className="flex justify-between text-slate-300 mb-1">
@@ -267,7 +325,7 @@ export const BlockPlannerView: React.FC = () => {
 
           {/* Rerouting Toggle */}
           <div className="flex items-center justify-between pt-3">
-            <span className="text-slate-300">Allow Train Rerouting</span>
+            <span className="text-slate-300">Allow Rerouting</span>
             <button
               onClick={() => setAllowRerouting(!allowRerouting)}
               className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${

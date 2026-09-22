@@ -5,11 +5,13 @@ import {
   Upload,
   FileSpreadsheet,
   CheckCircle2,
+  AlertCircle,
   Activity,
   Server,
   Layers,
   Sparkles,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface SystemStatus {
   id: string;
@@ -41,10 +43,11 @@ export const DataIntegrationView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch('/api/data-integration/status');
+      const res = await fetchWithAuth('/api/data-integration/status');
       if (res.ok) {
         setSystems(await res.json());
       }
@@ -55,7 +58,7 @@ export const DataIntegrationView: React.FC = () => {
 
   const fetchPreview = async (sys: string) => {
     try {
-      const res = await fetch(`/api/data-integration/preview/${sys}`);
+      const res = await fetchWithAuth(`/api/data-integration/preview/${sys}`);
       if (res.ok) {
         setPreviewData(await res.json());
       }
@@ -75,18 +78,26 @@ export const DataIntegrationView: React.FC = () => {
 
   const handleSyncAll = async () => {
     setSyncing(true);
+    setNotification(null);
+    setErrorMessage(null);
     try {
-      const res = await fetch('/api/data-integration/sync', { method: 'POST' });
+      const res = await fetchWithAuth('/api/data-integration/sync', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setNotification(data.message);
         await fetchStatus();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || 'Sync failed: insufficient permissions');
       }
-    } catch (err) {
-      console.error('Sync failed:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Sync failed');
     } finally {
       setSyncing(false);
-      setTimeout(() => setNotification(null), 4000);
+      setTimeout(() => {
+        setNotification(null);
+        setErrorMessage(null);
+      }, 5000);
     }
   };
 
@@ -99,25 +110,38 @@ export const DataIntegrationView: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setNotification(null);
+    setErrorMessage(null);
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      setErrorMessage(`Selected Excel workbook "${file.name}". Please export or save as .csv for automated schema ingestion into RAILOPT.`);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('dataset_type', 'tasks');
 
     try {
-      const res = await fetch('/api/data-integration/upload-csv', {
+      const res = await fetchWithAuth('/api/data-integration/upload-csv', {
         method: 'POST',
         body: formData,
       });
       if (res.ok) {
         const data = await res.json();
-        setNotification(data.message);
+        setNotification(data.message || `Successfully ingested ${file.name}`);
+        await fetchStatus();
       } else {
-        alert('Upload failed. Please ensure file is a valid .csv format.');
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || 'Upload failed. Please ensure file is a valid .csv format.');
       }
-    } catch (err) {
-      console.error('Upload error:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Upload error');
     } finally {
-      setTimeout(() => setNotification(null), 4000);
+      setTimeout(() => {
+        setNotification(null);
+        setErrorMessage(null);
+      }, 5000);
     }
   };
 
@@ -145,13 +169,11 @@ export const DataIntegrationView: React.FC = () => {
             <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
           </label>
 
-          <button
-            onClick={() => alert('Excel upload supported for .xlsx files. Please select a CSV file or use simulated seed data.')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-railnavy-700 bg-railnavy-950/60 hover:bg-railnavy-800 text-slate-200 text-xs font-semibold transition"
-          >
+          <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-railnavy-700 bg-railnavy-950/60 hover:bg-railnavy-800 text-slate-200 text-xs font-semibold cursor-pointer transition">
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
             <span>Upload Excel</span>
-          </button>
+            <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" />
+          </label>
 
           <button
             onClick={handleSyncAll}
@@ -166,8 +188,20 @@ export const DataIntegrationView: React.FC = () => {
 
       {notification && (
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{notification}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="text-rose-400 hover:text-white font-bold ml-4">
+            ✕
+          </button>
         </div>
       )}
 

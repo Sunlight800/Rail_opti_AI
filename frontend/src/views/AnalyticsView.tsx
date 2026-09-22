@@ -26,6 +26,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { fetchWithAuth } from '../services/api';
 
 interface TrendDay {
   date: string;
@@ -74,9 +75,9 @@ export const AnalyticsView: React.FC = () => {
     setIsLoading(true);
     try {
       const [trendsRes, deptsRes, corridorRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/analytics/kpi-trends'),
-        fetch('http://127.0.0.1:8000/api/analytics/departmental-breakdown'),
-        fetch('http://127.0.0.1:8000/api/analytics/corridor-performance'),
+        fetchWithAuth('/api/analytics/kpi-trends'),
+        fetchWithAuth('/api/analytics/departmental-breakdown'),
+        fetchWithAuth('/api/analytics/corridor-performance'),
       ]);
 
       if (trendsRes.ok) {

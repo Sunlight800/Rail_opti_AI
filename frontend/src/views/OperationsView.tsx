@@ -12,7 +12,10 @@ import {
   RefreshCw,
   Info,
   Navigation,
+  X,
+  ShieldAlert,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface TopologyNode {
   id: string;
@@ -79,6 +82,7 @@ export const OperationsView: React.FC = () => {
   const [trains, setTrains] = useState<TrainRecord[]>([]);
   const [liveStatus, setLiveStatus] = useState<OperationsLiveStatus | null>(null);
   const [selectedSection, setSelectedSection] = useState<TopologyEdge | null>(null);
+  const [selectedTrain, setSelectedTrain] = useState<TrainRecord | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -87,9 +91,9 @@ export const OperationsView: React.FC = () => {
     setLoading(true);
     try {
       const [topRes, trnRes, statRes] = await Promise.all([
-        fetch('/api/operations/corridors/COR-DEL-BOM/topology'),
-        fetch('/api/operations/trains'),
-        fetch('/api/operations/live-status'),
+        fetchWithAuth('/api/operations/corridors/COR-DEL-BOM/topology'),
+        fetchWithAuth('/api/operations/trains'),
+        fetchWithAuth('/api/operations/live-status'),
       ]);
 
       if (topRes.ok) {
@@ -482,7 +486,16 @@ export const OperationsView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-800/50">
               {filteredTrains.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-800/30 transition-colors">
+                <tr
+                  key={t.id}
+                  onClick={() => {
+                    setSelectedTrain(t);
+                    const sec = topology?.edges.find((e) => e.section_id === t.current_section_id);
+                    if (sec) setSelectedSection(sec);
+                  }}
+                  className="hover:bg-slate-800/40 cursor-pointer transition-colors"
+                  title="Click to inspect train telemetry & section location"
+                >
                   <td className="py-3 px-3 font-mono font-bold text-blue-400">
                     {t.train_number}
                   </td>
@@ -526,6 +539,86 @@ export const OperationsView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Train Detail Inspector Modal */}
+      {selectedTrain && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-left">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+                  <Train className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {selectedTrain.train_number} — {selectedTrain.train_name}
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-400">
+                    Corridor Golden Quadrilateral · Priority Rank {selectedTrain.priority_rank}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTrain(null)}
+                className="text-slate-400 hover:text-white text-sm font-bold p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase font-semibold">Category</span>
+                <div className="font-bold text-slate-200 mt-1">
+                  {selectedTrain.train_category.replace('_', ' ')}
+                </div>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase font-semibold">Current Section</span>
+                <div className="font-mono font-bold text-cyan-400 mt-1">
+                  {selectedTrain.current_section_id}
+                </div>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase font-semibold">Scheduled Window</span>
+                <div className="font-mono font-bold text-slate-200 mt-1">
+                  {selectedTrain.scheduled_entry} – {selectedTrain.scheduled_exit}
+                </div>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase font-semibold">Punctuality</span>
+                <div className={`font-mono font-bold mt-1 ${
+                  selectedTrain.punctuality_status === 'ON_TIME' ? 'text-emerald-400' : 'text-amber-400'
+                }`}>
+                  {selectedTrain.punctuality_status === 'ON_TIME'
+                    ? 'ON TIME (0m)'
+                    : `+${selectedTrain.delay_minutes} min delay`}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                Operational Dispatch Note
+              </span>
+              <p className="text-[11px] leading-relaxed">
+                {selectedTrain.delay_minutes > 0
+                  ? `Train is experiencing a ${selectedTrain.delay_minutes} min cumulative delay due to sectional speed restrictions. Priority rank ${selectedTrain.priority_rank} allows precedence over freight paths at junction loops.`
+                  : `Operating within designated timetable path. No precedence conflicts detected on current block segment.`}
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setSelectedTrain(null)}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition"
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

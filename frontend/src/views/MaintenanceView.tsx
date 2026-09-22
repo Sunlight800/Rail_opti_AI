@@ -8,11 +8,13 @@ import {
   Layers,
   CheckCircle2,
   ChevronRight,
+  ChevronLeft,
   X,
   ShieldAlert,
   Brain,
   Zap,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface TaskSummary {
   id: string;
@@ -85,6 +87,9 @@ interface TaskDetail {
 
 export const MaintenanceView: React.FC = () => {
   const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const limit = 25;
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -92,19 +97,22 @@ export const MaintenanceView: React.FC = () => {
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [detailLoading, setDetailLoading] = useState<boolean>(false);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      let url = '/api/maintenance?limit=50';
+      let url = `/api/maintenance?page=${page}&limit=${limit}`;
       if (departmentFilter !== 'ALL') url += `&department_id=${departmentFilter}`;
       if (priorityFilter !== 'ALL') url += `&priority=${priorityFilter}`;
       if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
 
-      const res = await fetch(url);
+      const res = await fetchWithAuth(url);
       if (res.ok) {
         const data = await res.json();
-        setTasks(data.tasks);
+        setTasks(data.tasks || []);
+        setTotalCount(data.total_count || 0);
       }
     } catch (err) {
       console.error('Failed to load tasks:', err);
@@ -114,14 +122,18 @@ export const MaintenanceView: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTasks();
+    setPage(1);
   }, [departmentFilter, priorityFilter, searchTerm]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [page, departmentFilter, priorityFilter, searchTerm]);
 
   const handleOpenDetail = async (taskId: string) => {
     setSelectedTaskId(taskId);
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/maintenance/${taskId}`);
+      const res = await fetchWithAuth(`/api/maintenance/${taskId}`);
       if (res.ok) {
         setTaskDetail(await res.json());
       }
@@ -133,20 +145,33 @@ export const MaintenanceView: React.FC = () => {
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
+    setNotification(null);
+    setErrorMessage(null);
     try {
-      const res = await fetch(`/api/maintenance/${taskId}/status?new_status=${newStatus}`, {
+      const res = await fetchWithAuth(`/api/maintenance/${taskId}/status?new_status=${newStatus}`, {
         method: 'PUT',
       });
       if (res.ok) {
+        setNotification(`Task ${taskId} status successfully updated to ${newStatus}`);
         await fetchTasks();
         if (selectedTaskId === taskId) {
           await handleOpenDetail(taskId);
         }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || `Failed to update status (${res.status} Forbidden)`);
       }
-    } catch (err) {
-      console.error('Status update failed:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Status update failed');
+    } finally {
+      setTimeout(() => {
+        setNotification(null);
+        setErrorMessage(null);
+      }, 5000);
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
   return (
     <div className="p-6 space-y-6 max-w-[1700px] mx-auto text-left">
@@ -176,6 +201,30 @@ export const MaintenanceView: React.FC = () => {
           />
         </div>
       </div>
+
+      {notification && (
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{notification}</span>
+          </div>
+          <button onClick={() => setNotification(null)} className="text-emerald-400 hover:text-white font-bold ml-4">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="text-rose-400 hover:text-white font-bold ml-4">
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Filter Tabs & Priority Chips */}
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -307,6 +356,37 @@ export const MaintenanceView: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-railnavy-800 text-xs text-slate-400">
+          <div>
+            Showing <span className="text-white font-semibold">{totalCount > 0 ? (page - 1) * limit + 1 : 0}</span> to{' '}
+            <span className="text-white font-semibold">{Math.min(page * limit, totalCount)}</span> of{' '}
+            <span className="text-white font-semibold">{totalCount}</span> tasks
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-railnavy-950 border border-railnavy-700 text-slate-300 hover:text-white hover:bg-railnavy-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Previous
+            </button>
+            <span className="px-3 py-1 font-mono text-white bg-railnavy-950 border border-railnavy-800 rounded-lg">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-railnavy-950 border border-railnavy-700 text-slate-300 hover:text-white hover:bg-railnavy-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 

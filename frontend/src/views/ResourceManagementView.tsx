@@ -17,6 +17,7 @@ import {
   Filter,
   RefreshCw,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface CategoryData {
   category: string;
@@ -97,8 +98,8 @@ export const ResourceManagementView: React.FC = () => {
     setLoading(true);
     try {
       const [availRes, trackRes] = await Promise.all([
-        fetch('/api/resources/availability'),
-        fetch('/api/resources/active-tracking'),
+        fetchWithAuth('/api/resources/availability'),
+        fetchWithAuth('/api/resources/active-tracking'),
       ]);
       if (availRes.ok) {
         setSummary(await availRes.json());
@@ -116,7 +117,7 @@ export const ResourceManagementView: React.FC = () => {
   const checkTaskFeasibility = async (taskId: string) => {
     setCheckingFeasibility(true);
     try {
-      const res = await fetch('/api/resources/feasibility', {
+      const res = await fetchWithAuth('/api/resources/feasibility', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId }),

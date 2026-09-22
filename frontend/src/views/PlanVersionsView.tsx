@@ -13,7 +13,10 @@ import {
   AlertCircle,
   FileCheck2,
   CalendarDays,
+  ShieldAlert,
+  X,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface PlanVersionItem {
   id: string;
@@ -75,11 +78,12 @@ export const PlanVersionsView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isActivating, setIsActivating] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchPlans = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/plans');
+      const res = await fetchWithAuth('/api/plans');
       if (res.ok) {
         const data = await res.json();
         setPlans(data);
@@ -101,8 +105,8 @@ export const PlanVersionsView: React.FC = () => {
   const fetchComparison = async () => {
     if (!selectedV1 || !selectedV2) return;
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/plans/compare?v1=${selectedV1}&v2=${selectedV2}`
+      const res = await fetchWithAuth(
+        `/api/plans/compare?v1=${selectedV1}&v2=${selectedV2}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -126,8 +130,9 @@ export const PlanVersionsView: React.FC = () => {
   const handleActivatePlan = async (planId: string) => {
     setIsActivating(true);
     setNotification(null);
+    setErrorMessage(null);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/plans/${planId}/activate`, {
+      const res = await fetchWithAuth(`/api/plans/${planId}/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,9 +145,12 @@ export const PlanVersionsView: React.FC = () => {
         const data = await res.json();
         setNotification(`Plan ${planId} is now ACTIVE and locked for operational dispatch!`);
         fetchPlans();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || `Failed to activate plan (${res.status} Forbidden)`);
       }
-    } catch (err) {
-      console.error('Failed to activate plan:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to activate plan');
     } finally {
       setIsActivating(false);
     }
@@ -189,6 +197,19 @@ export const PlanVersionsView: React.FC = () => {
             <span>{notification}</span>
           </div>
           <button onClick={() => setNotification(null)} className="text-emerald-400 hover:text-white font-bold ml-4">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-500/40 flex items-center justify-between text-rose-300 text-xs shadow-md">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="text-rose-400 hover:text-white font-bold ml-4">
             ✕
           </button>
         </div>

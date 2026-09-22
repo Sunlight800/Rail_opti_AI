@@ -11,6 +11,7 @@ import {
   Layers,
   ChevronRight,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface RiskProfile {
   task_id: string;
@@ -43,7 +44,7 @@ export const AIIntelligenceView: React.FC = () => {
   const fetchBaseline = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/risk/MT-001');
+      const res = await fetchWithAuth('/api/risk/MT-001');
       if (res.ok) {
         setSpotlightRisk(await res.json());
       }
@@ -58,7 +59,7 @@ export const AIIntelligenceView: React.FC = () => {
   const runSensitivityTest = async () => {
     setSimulating(true);
     try {
-      const res = await fetch('/api/risk/evaluate', {
+      const res = await fetchWithAuth('/api/risk/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

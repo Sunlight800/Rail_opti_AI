@@ -31,6 +31,14 @@ export function clearAuth(): void {
 }
 
 /**
+ * Returns the configured API base URL (from VITE_API_BASE_URL) or empty string for relative proxying.
+ */
+export function getApiBaseUrl(): string {
+  const base = import.meta.env.VITE_API_BASE_URL || '';
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+
+/**
  * Perform an authenticated HTTP request injecting Bearer token and user role.
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
@@ -51,9 +59,11 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     headers.set('Content-Type', 'application/json');
   }
 
-  const cleanUrl = url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`;
+  const baseUrl = getApiBaseUrl();
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${normalizedPath}`;
 
-  return fetch(cleanUrl, {
+  return fetch(fullUrl, {
     ...options,
     headers,
   });

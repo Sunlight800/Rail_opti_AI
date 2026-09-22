@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   AlertCircle,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface ReportTemplate {
   id: string;
@@ -61,7 +62,7 @@ export const ReportsView: React.FC = () => {
   const fetchTemplates = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/reports/list');
+      const res = await fetchWithAuth('/api/reports/list');
       if (res.ok) {
         const data = await res.json();
         setTemplates(data || []);
@@ -76,7 +77,7 @@ export const ReportsView: React.FC = () => {
   const handleGenerateReport = async () => {
     setIsGenerating(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/reports/generate', {
+      const res = await fetchWithAuth('/api/reports/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -145,11 +146,35 @@ export const ReportsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5 bg-railnavy-800 border border-railnavy-700 rounded-lg px-2 py-1">
+            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+              className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+            >
+              <option value="ALL" className="bg-railnavy-900 text-white">All Departments</option>
+              <option value="ENG" className="bg-railnavy-900 text-white">Engineering (ENG)</option>
+              <option value="TRD" className="bg-railnavy-900 text-white">Traction (TRD)</option>
+              <option value="S&T" className="bg-railnavy-900 text-white">Signal & Telecom (S&T)</option>
+              <option value="OPT" className="bg-railnavy-900 text-white">Operating (OPT)</option>
+            </select>
+          </div>
+
+          <button
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+            {isGenerating ? 'Generating...' : 'Refresh'}
+          </button>
+
           <button
             onClick={downloadCsv}
             disabled={!report}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-railnavy-800 hover:bg-railnavy-700 text-slate-300 hover:text-white border border-railnavy-600 text-xs font-semibold transition"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-railnavy-800 hover:bg-railnavy-700 text-slate-300 hover:text-white border border-railnavy-600 text-xs font-semibold transition disabled:opacity-50"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
             Export CSV
@@ -157,7 +182,7 @@ export const ReportsView: React.FC = () => {
           <button
             onClick={downloadJson}
             disabled={!report}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-railnavy-800 hover:bg-railnavy-700 text-slate-300 hover:text-white border border-railnavy-600 text-xs font-semibold transition"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-railnavy-800 hover:bg-railnavy-700 text-slate-300 hover:text-white border border-railnavy-600 text-xs font-semibold transition disabled:opacity-50"
           >
             <FileCode className="w-3.5 h-3.5 text-cyan-400" />
             Export JSON

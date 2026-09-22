@@ -306,25 +306,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex-1 h-8 bg-railnavy-950/80 rounded-lg relative border border-railnavy-800/80 overflow-hidden">
                 {/* Rajdhani */}
                 <div
-                  className="absolute top-1.5 h-5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded px-2 text-[10px] text-white flex items-center font-sans shadow truncate"
+                  onClick={() => onNavigate('operations')}
+                  className="absolute top-1.5 h-5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded px-2 text-[10px] text-white flex items-center font-sans shadow truncate cursor-pointer hover:scale-105 transition"
                   style={{ left: '10%', width: '28%' }}
-                  title="Rajdhani Exp (06:30 - 11:45)"
+                  title="Rajdhani Exp (06:30 - 11:45) - Click to view in Operations"
                 >
                   Rajdhani Exp
                 </div>
                 {/* Freight */}
                 <div
-                  className="absolute top-1.5 h-5 bg-slate-700 rounded px-2 text-[10px] text-slate-200 flex items-center font-sans shadow truncate"
+                  onClick={() => onNavigate('operations')}
+                  className="absolute top-1.5 h-5 bg-slate-700 hover:bg-slate-600 rounded px-2 text-[10px] text-slate-200 flex items-center font-sans shadow truncate cursor-pointer hover:scale-105 transition"
                   style={{ left: '38%', width: '24%' }}
-                  title="Freight_SZ314 (10:15 - 15:30)"
+                  title="Freight_SZ314 (10:15 - 15:30) - Click to view in Operations"
                 >
                   Freight_SZ314
                 </div>
                 {/* Shatabdi */}
                 <div
-                  className="absolute top-1.5 h-5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded px-2 text-[10px] text-white flex items-center font-sans shadow truncate"
+                  onClick={() => onNavigate('operations')}
+                  className="absolute top-1.5 h-5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded px-2 text-[10px] text-white flex items-center font-sans shadow truncate cursor-pointer hover:scale-105 transition"
                   style={{ left: '68%', width: '22%' }}
-                  title="Shatabdi Exp (17:00 - 21:15)"
+                  title="Shatabdi Exp (17:00 - 21:15) - Click to view in Operations"
                 >
                   Shatabdi Exp
                 </div>
@@ -337,33 +340,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex-1 h-8 bg-railnavy-950/80 rounded-lg relative border border-railnavy-800/80 overflow-hidden">
                 {/* ENG-102 */}
                 <div
-                  className="absolute top-1.5 h-5 bg-rose-600/90 hover:bg-rose-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-rose-400/40"
+                  onClick={() => onSelectTask ? onSelectTask('MT-001') : onNavigate('block-planning')}
+                  className="absolute top-1.5 h-5 bg-rose-600/90 hover:bg-rose-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-rose-400/40 hover:scale-105 transition"
                   style={{ left: '18%', width: '16%' }}
-                  title="ENG-102 (Tamping) [09:00 - 12:00]"
+                  title="ENG-102 (Tamping) [09:00 - 12:00] - Click to inspect Task & Block"
                 >
                   ENG-102
                 </div>
                 {/* TRD-045 */}
                 <div
-                  className="absolute top-1.5 h-5 bg-cyan-600/90 hover:bg-cyan-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-cyan-400/40"
+                  onClick={() => onSelectTask ? onSelectTask('MT-003') : onNavigate('block-planning')}
+                  className="absolute top-1.5 h-5 bg-cyan-600/90 hover:bg-cyan-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-cyan-400/40 hover:scale-105 transition"
                   style={{ left: '35%', width: '16%' }}
-                  title="TRD-045 (OHE) [11:30 - 14:30]"
+                  title="TRD-045 (OHE) [11:30 - 14:30] - Click to inspect Task & Block"
                 >
                   TRD-045
                 </div>
                 {/* S&T-087 */}
                 <div
-                  className="absolute top-1.5 h-5 bg-emerald-600/90 hover:bg-emerald-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-emerald-400/40"
+                  onClick={() => onSelectTask ? onSelectTask('MT-002') : onNavigate('block-planning')}
+                  className="absolute top-1.5 h-5 bg-emerald-600/90 hover:bg-emerald-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-emerald-400/40 hover:scale-105 transition"
                   style={{ left: '55%', width: '16%' }}
-                  title="S&T-087 (Signals) [14:00 - 17:00]"
+                  title="S&T-087 (Signals) [14:00 - 17:00] - Click to inspect Task & Block"
                 >
                   S&T-087
                 </div>
                 {/* ENG-103 */}
                 <div
-                  className="absolute top-1.5 h-5 bg-amber-600/90 hover:bg-amber-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-amber-400/40"
+                  onClick={() => onSelectTask ? onSelectTask('MT-004') : onNavigate('block-planning')}
+                  className="absolute top-1.5 h-5 bg-amber-600/90 hover:bg-amber-500 rounded px-1.5 text-[10px] text-white flex items-center font-sans shadow cursor-pointer border border-amber-400/40 hover:scale-105 transition"
                   style={{ left: '76%', width: '16%' }}
-                  title="ENG-103 (Rail Renewal) [18:30 - 21:30]"
+                  title="ENG-103 (Rail Renewal) [18:30 - 21:30] - Click to inspect Task & Block"
                 >
                   ENG-103
                 </div>
@@ -374,13 +381,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center gap-3">
               <span className="w-20 text-[11px] text-slate-400 font-sans">Network Sections</span>
               <div className="flex-1 h-7 bg-railnavy-950/80 rounded-lg relative border border-railnavy-800/80 flex items-center px-2 gap-3 text-[10px] font-sans">
-                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                <span
+                  onClick={() => onNavigate('operations')}
+                  className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 cursor-pointer hover:bg-amber-500/30 transition"
+                  title="Click to view section in Operations"
+                >
                   <AlertTriangle className="w-3 h-3" /> NDLS - ALD
                 </span>
-                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                <span
+                  onClick={() => onNavigate('operations')}
+                  className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 cursor-pointer hover:bg-amber-500/30 transition"
+                  title="Click to view section in Operations"
+                >
                   <AlertTriangle className="w-3 h-3" /> ALD - BPL
                 </span>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <span
+                  onClick={() => onNavigate('operations')}
+                  className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 cursor-pointer hover:bg-emerald-500/30 transition"
+                  title="Click to view section in Operations"
+                >
                   <CheckCircle2 className="w-3 h-3" /> BPL - RJP
                 </span>
               </div>

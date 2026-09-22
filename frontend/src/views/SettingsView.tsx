@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   Sliders,
@@ -12,7 +12,13 @@ import {
   Save,
   Server,
   Terminal,
+  Mail,
+  Smartphone,
+  Radio,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
+
+const SETTINGS_STORAGE_KEY = 'railopt_solver_settings';
 
 export const SettingsView: React.FC = () => {
   const [solverTimeLimit, setSolverTimeLimit] = useState<number>(30);
@@ -21,27 +27,63 @@ export const SettingsView: React.FC = () => {
   const [disruptionPenalty, setDisruptionPenalty] = useState<number>(20.0);
   const [emailAlerts, setEmailAlerts] = useState<boolean>(true);
   const [criticalSmsAlerts, setCriticalSmsAlerts] = useState<boolean>(true);
+  const [webhookAlerts, setWebhookAlerts] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.solverTimeLimit) setSolverTimeLimit(parsed.solverTimeLimit);
+        if (parsed.priorityWeight) setPriorityWeight(parsed.priorityWeight);
+        if (parsed.consolidationBonus) setConsolidationBonus(parsed.consolidationBonus);
+        if (parsed.disruptionPenalty) setDisruptionPenalty(parsed.disruptionPenalty);
+        if (parsed.emailAlerts !== undefined) setEmailAlerts(parsed.emailAlerts);
+        if (parsed.criticalSmsAlerts !== undefined) setCriticalSmsAlerts(parsed.criticalSmsAlerts);
+        if (parsed.webhookAlerts !== undefined) setWebhookAlerts(parsed.webhookAlerts);
+      }
+    } catch (e) {
+      console.warn('Failed to load settings from storage', e);
+    }
+  }, []);
+
   const handleSaveSettings = () => {
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    try {
+      const payload = {
+        solverTimeLimit,
+        priorityWeight,
+        consolidationBonus,
+        disruptionPenalty,
+        emailAlerts,
+        criticalSmsAlerts,
+        webhookAlerts,
+      };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (e) {
+      console.error('Failed to save settings to localStorage', e);
+    }
   };
 
   const handleReSeed = async () => {
     setIsResetting(true);
     setResetMessage(null);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/integration/sync/all', {
+      const res = await fetchWithAuth('/api/integration/sync/all', {
         method: 'POST',
       });
       if (res.ok) {
         setResetMessage('Database successfully synchronized with live TMS/SMMS/TDMS/COA feeds!');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setResetMessage(err.detail || 'Sync failed: insufficient permissions');
       }
-    } catch (err) {
-      console.error('Failed to sync:', err);
+    } catch (err: any) {
+      setResetMessage(err.message || 'Failed to sync feeds');
     } finally {
       setIsResetting(false);
     }
@@ -189,6 +231,80 @@ export const SettingsView: React.FC = () => {
             <p className="text-[10px] text-slate-500">
               Maximum execution ceiling before solver terminates with best-found feasible solution.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Alerts & Operational Notifications Configuration */}
+      <div className="p-6 rounded-2xl bg-railnavy-900/90 border border-railnavy-800 shadow-lg space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-railnavy-800">
+          <div>
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Bell className="w-4 h-4 text-cyan-400" />
+              Real-Time Dispatch Alerts & Notification Channels
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Configure automated notifications dispatched to field engineers and controllers during emergency blocks and conflict detection.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl bg-railnavy-850/80 border border-railnavy-700/60 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Mail className="w-5 h-5 text-indigo-400" />
+              <div>
+                <span className="text-xs font-bold text-white block">Email Dispatch</span>
+                <span className="text-[10px] text-slate-400">Daily dossiers & plan activations</span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={emailAlerts}
+                onChange={(e) => setEmailAlerts(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-railnavy-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+            </label>
+          </div>
+
+          <div className="p-4 rounded-xl bg-railnavy-850/80 border border-railnavy-700/60 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Smartphone className="w-5 h-5 text-emerald-400" />
+              <div>
+                <span className="text-xs font-bold text-white block">Critical SMS / WhatsApp</span>
+                <span className="text-[10px] text-slate-400">High-risk defects & track emergencies</span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={criticalSmsAlerts}
+                onChange={(e) => setCriticalSmsAlerts(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-railnavy-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+            </label>
+          </div>
+
+          <div className="p-4 rounded-xl bg-railnavy-850/80 border border-railnavy-700/60 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Radio className="w-5 h-5 text-amber-400" />
+              <div>
+                <span className="text-xs font-bold text-white block">COA / TMS Webhook</span>
+                <span className="text-[10px] text-slate-400">Real-time JSON stream to CRIS</span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={webhookAlerts}
+                onChange={(e) => setWebhookAlerts(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-railnavy-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+            </label>
           </div>
         </div>
       </div>

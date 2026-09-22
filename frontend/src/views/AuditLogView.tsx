@@ -13,6 +13,7 @@ import {
   FileText,
   Clock,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface AuditLogEntry {
   id: string;
@@ -41,12 +42,12 @@ export const AuditLogView: React.FC = () => {
     try {
       const url =
         selectedAction === 'ALL'
-          ? 'http://127.0.0.1:8000/api/audit/logs'
-          : `http://127.0.0.1:8000/api/audit/logs?action=${selectedAction}`;
+          ? '/api/audit/logs'
+          : `/api/audit/logs?action=${encodeURIComponent(selectedAction)}`;
 
       const [logsRes, actionsRes] = await Promise.all([
-        fetch(url),
-        fetch('http://127.0.0.1:8000/api/audit/actions'),
+        fetchWithAuth(url),
+        fetchWithAuth('/api/audit/actions'),
       ]);
 
       if (logsRes.ok) {

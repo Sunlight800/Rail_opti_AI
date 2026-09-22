@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { UserProfileData } from '../types/dashboard';
-import { setAuthToken, setStoredUser } from '../services/api';
+import { setAuthToken, setStoredUser, getApiBaseUrl } from '../services/api';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -29,7 +29,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const pwd = targetPassword || password;
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: uname, password: pwd }),

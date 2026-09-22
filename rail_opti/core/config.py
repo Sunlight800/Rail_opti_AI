@@ -1,6 +1,8 @@
 """Core configuration and settings module for RAILOPT AI."""
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from pydantic import field_validator
+from typing import List, Any, Union
+import json
 
 
 class Settings(BaseSettings):
@@ -15,6 +17,13 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = "sqlite:///./railopt.db"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_url(cls, v: Any) -> str:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return str(v)
     
     # Security & JWT
     SECRET_KEY: str = "sih26027_railopt_ai_super_secret_jwt_key_2026"
@@ -27,10 +36,34 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "https://rail-opt-ai.vercel.app",
+        "https://railopt-ai.vercel.app",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "https://rail-opt-ai.vercel.app",
+            "https://railopt-ai.vercel.app",
+        ]
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
 
 
 settings = Settings()
+

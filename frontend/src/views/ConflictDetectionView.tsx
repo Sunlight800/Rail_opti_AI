@@ -12,7 +12,9 @@ import {
   Zap,
   Info,
   Sliders,
+  X,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface ResolutionOption {
   option_id?: string;
@@ -56,12 +58,13 @@ export const ConflictDetectionView: React.FC = () => {
   const [scanning, setScanning] = useState<boolean>(false);
   const [resolving, setResolving] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchConflicts = async () => {
     try {
       const [confRes, sumRes] = await Promise.all([
-        fetch('/api/conflicts?plan_version_id=PLN-V1'),
-        fetch('/api/conflicts/summary?plan_version_id=PLN-V1'),
+        fetchWithAuth('/api/conflicts?plan_version_id=PLN-V1'),
+        fetchWithAuth('/api/conflicts/summary?plan_version_id=PLN-V1'),
       ]);
 
       if (confRes.ok) {
@@ -81,8 +84,10 @@ export const ConflictDetectionView: React.FC = () => {
 
   const handleRunScan = async () => {
     setScanning(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
-      const res = await fetch('/api/conflicts/scan?plan_version_id=PLN-V1', { method: 'POST' });
+      const res = await fetchWithAuth('/api/conflicts/scan?plan_version_id=PLN-V1', { method: 'POST' });
       if (res.ok) {
         const scanResult = await res.json();
         // Merge scanned conflicts
@@ -93,9 +98,12 @@ export const ConflictDetectionView: React.FC = () => {
           }
         }
         setSuccessMessage(`Dynamic scan completed: ${scanResult.conflicts_detected_count} conflicts evaluated across 14 rules.`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || `Scan failed (${res.status} Forbidden)`);
       }
-    } catch (err) {
-      console.error('Failed to trigger scan:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to trigger scan');
     } finally {
       setScanning(false);
     }
@@ -104,11 +112,13 @@ export const ConflictDetectionView: React.FC = () => {
   const handleApplyResolution = async () => {
     if (!selectedConflict) return;
     setResolving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
       const option = selectedConflict.resolution_options[selectedOptionIdx];
       const optId = option?.option_id || 'OPT-APPLY';
 
-      const res = await fetch(`/api/conflicts/${selectedConflict.id}/resolve`, {
+      const res = await fetchWithAuth(`/api/conflicts/${selectedConflict.id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resolution_option_id: optId }),
@@ -121,9 +131,12 @@ export const ConflictDetectionView: React.FC = () => {
           prev.map((c) => (c.id === selectedConflict.id ? { ...c, is_resolved: true } : c))
         );
         setSelectedConflict((prev) => (prev ? { ...prev, is_resolved: true } : null));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.detail || `Failed to resolve conflict (${res.status} Forbidden)`);
       }
-    } catch (err) {
-      console.error('Failed to resolve conflict:', err);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to resolve conflict');
     } finally {
       setResolving(false);
     }
@@ -192,6 +205,22 @@ export const ConflictDetectionView: React.FC = () => {
           <button
             onClick={() => setSuccessMessage(null)}
             className="text-emerald-400 hover:text-emerald-200 text-xs font-mono"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Error / 403 Forbidden Notification */}
+      {errorMessage && (
+        <div className="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-rose-300">
+            <ShieldAlert className="w-4 h-4 text-rose-400" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-rose-400 hover:text-rose-200 text-xs font-mono"
           >
             ✕
           </button>

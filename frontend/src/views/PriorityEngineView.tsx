@@ -11,6 +11,7 @@ import {
   Info,
   Clock,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface FactorDetail {
   name: string;
@@ -65,7 +66,7 @@ export const PriorityEngineView: React.FC = () => {
   const fetchTaskPriority = async (taskId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/priority/${taskId}`);
+      const res = await fetchWithAuth(`/api/priority/${taskId}`);
       if (res.ok) {
         const data: PriorityResult = await res.json();
         setPriorityData(data);
@@ -111,7 +112,7 @@ export const PriorityEngineView: React.FC = () => {
           defect_severity: wDefect,
         },
       };
-      const res = await fetch('/api/priority/recalculate', {
+      const res = await fetchWithAuth('/api/priority/recalculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

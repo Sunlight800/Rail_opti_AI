@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: railopt-ai-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DEMO_MODE
+        value: "true"
+      - key: CORS_ORIGINS
+        value: '["https://rail-opt-ai.vercel.app","https://railopt-ai.vercel.app","http://localhost:5173","http://127.0.0.1:5173"]'
+      - key: SECRET_KEY
+        generateValue: true

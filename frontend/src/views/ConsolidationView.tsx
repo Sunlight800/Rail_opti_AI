@@ -13,7 +13,9 @@ import {
   Shield,
   Layers,
   RefreshCw,
+  ShieldAlert,
 } from 'lucide-react';
+import { fetchWithAuth } from '../services/api';
 
 interface ConsolidationGroup {
   id: string;
@@ -60,14 +62,15 @@ export const ConsolidationView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [mergingId, setMergingId] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const fetchConsolidationData = async () => {
     setLoading(true);
     try {
       const [grpRes, oppRes, sumRes] = await Promise.all([
-        fetch('/api/consolidation/groups'),
-        fetch('/api/consolidation/opportunities'),
-        fetch('/api/consolidation/summary'),
+        fetchWithAuth('/api/consolidation/groups'),
+        fetchWithAuth('/api/consolidation/opportunities'),
+        fetchWithAuth('/api/consolidation/summary'),
       ]);
 
       if (grpRes.ok) setGroups(await grpRes.json());
@@ -82,6 +85,8 @@ export const ConsolidationView: React.FC = () => {
 
   const handleMergeOpportunity = async (opp: ConsolidationOpportunity) => {
     setMergingId(opp.opportunity_id);
+    setErrorToast(null);
+    setSuccessToast(null);
     try {
       const payload = {
         section_id: opp.section_id,
@@ -89,7 +94,7 @@ export const ConsolidationView: React.FC = () => {
         duration_min: 180,
       };
 
-      const res = await fetch('/api/consolidation/merge', {
+      const res = await fetchWithAuth('/api/consolidation/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -99,9 +104,12 @@ export const ConsolidationView: React.FC = () => {
         const data = await res.json();
         setSuccessToast(`Merged ${opp.task_count} tasks into ${data.block_id}, saving ${data.hours_saved} hours!`);
         fetchConsolidationData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorToast(err.detail || `Merge failed (${res.status} Forbidden)`);
       }
-    } catch (err) {
-      console.error('Failed to merge tasks:', err);
+    } catch (err: any) {
+      setErrorToast(err.message || 'Failed to merge tasks');
     } finally {
       setMergingId(null);
     }
@@ -162,6 +170,17 @@ export const ConsolidationView: React.FC = () => {
             <span>{successToast}</span>
           </div>
           <button onClick={() => setSuccessToast(null)} className="text-emerald-400 text-xs font-mono">✕</button>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-rose-300">
+            <ShieldAlert className="w-4 h-4 text-rose-400" />
+            <span>{errorToast}</span>
+          </div>
+          <button onClick={() => setErrorToast(null)} className="text-rose-400 text-xs font-mono">✕</button>
         </div>
       )}
 
