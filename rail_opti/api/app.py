@@ -8,8 +8,16 @@ from rail_opti.core.config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle event to initialize database tables and seed data."""
-    from rail_opti.database.init_db import init_db
-    init_db()
+    import logging
+    logger = logging.getLogger("uvicorn.error")
+    try:
+        from rail_opti.database.init_db import init_db
+        logger.info("Initializing database tables and seed data...")
+        init_db()
+        logger.info("Database initialization and seeding completed successfully.")
+    except Exception as e:
+        logger.critical(f"FATAL: Database initialization failed during startup: {e}", exc_info=True)
+        raise
     yield
 
 

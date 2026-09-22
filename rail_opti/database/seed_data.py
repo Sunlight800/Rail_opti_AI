@@ -57,7 +57,7 @@ def seed_resources_if_missing(db: Session):
         ("RES-MCH-CSM-01", "ENG", "TRACK_MACHINES", "Continuous Tamping Machine (CSM-01)", "SEC-NDLS-ALD", 1, True),
         ("RES-MCH-CSM-02", "ENG", "TRACK_MACHINES", "Continuous Tamping Machine (CSM-02)", "SEC-BPL-RJP", 1, True),
         ("RES-MCH-DGS-01", "ENG", "TRACK_MACHINES", "Dynamic Track Stabilizer (DGS-01)", "SEC-NDLS-ALD", 1, True),
-        ("RES-MCH-T28-01", "ENG", "TRACK_MACHINES", "Point & Crossing Machine (T-28)", "SEC-RJP-BRC", 1, True),
+        ("RES-MCH-T28-01", "ENG", "TRACK_MACHINES", "Point & Crossing Machine (T-28)", "SEC-KTA-BRC", 1, True),
         ("RES-MCH-UNIMAT", "ENG", "TRACK_MACHINES", "UNIMAT 4S Switch Tamper", "SEC-BRC-ST", 1, True),
         # 2. TOWER_WAGONS (Electrical / TRD)
         ("RES-TW-08W-01", "TRD", "TOWER_WAGONS", "8-Wheeler OHE Inspection Car (TW-01)", "SEC-NDLS-ALD", 1, True),
@@ -313,8 +313,8 @@ def seed_database(db: Session):
         ("RES-SSE-TRD-01", "TRD", "SUPERVISOR", "Senior Section Engineer (TRD)", "SEC-ALD-BPL", 2),
         ("RES-SSE-SNT-01", "SNT", "SUPERVISOR", "Senior Section Engineer (Signal)", "SEC-BPL-RJP", 2),
         # Heavy Track Machines
-        ("RES-MCH-CSM-01", "ENG", "MACHINE", "Continuous Tamping Machine CSM-101", "SEC-NDLS-ALD", 1),
-        ("RES-MCH-BCM-01", "ENG", "MACHINE", "Ballast Cleaning Machine BCM-05", "SEC-ALD-BPL", 1),
+        ("RES-MCH-CSM-101", "ENG", "MACHINE", "Continuous Tamping Machine CSM-101", "SEC-NDLS-ALD", 1),
+        ("RES-MCH-BCM-05", "ENG", "MACHINE", "Ballast Cleaning Machine BCM-05", "SEC-ALD-BPL", 1),
         ("RES-MCH-TW-01", "TRD", "MACHINE", "4-Wheeler Tower Wagon TW-01", "SEC-ALD-BPL", 1),
         ("RES-MCH-BR-01", "ENG", "MACHINE", "Ballast Regulator BR-12", "SEC-BPL-RJP", 1),
         # Vehicles
@@ -476,7 +476,7 @@ def seed_database(db: Session):
         ("RES-MCH-CSM-01", "ENG", "TRACK_MACHINES", "Continuous Tamping Machine (CSM-01)", "SEC-NDLS-ALD", 1, True),
         ("RES-MCH-CSM-02", "ENG", "TRACK_MACHINES", "Continuous Tamping Machine (CSM-02)", "SEC-BPL-RJP", 1, True),
         ("RES-MCH-DGS-01", "ENG", "TRACK_MACHINES", "Dynamic Track Stabilizer (DGS-01)", "SEC-NDLS-ALD", 1, True),
-        ("RES-MCH-T28-01", "ENG", "TRACK_MACHINES", "Point & Crossing Machine (T-28)", "SEC-RJP-BRC", 1, True),
+        ("RES-MCH-T28-01", "ENG", "TRACK_MACHINES", "Point & Crossing Machine (T-28)", "SEC-KTA-BRC", 1, True),
         ("RES-MCH-UNIMAT", "ENG", "TRACK_MACHINES", "UNIMAT 4S Switch Tamper", "SEC-BRC-ST", 1, True),
         # 2. TOWER_WAGONS (Electrical / TRD)
         ("RES-TW-08W-01", "TRD", "TOWER_WAGONS", "8-Wheeler OHE Inspection Car (TW-01)", "SEC-NDLS-ALD", 1, True),
